@@ -59,7 +59,10 @@ class MultiHeadAttention(torch.nn.Module):
     Multi-Head Attention mechanism that applies multiple self-attention heads in parallel.
     Each head computes its own attention scores and context vectors, which are then concatenated.
     Args:
-        embed_size (int): Size of the input embeddings.
+        d_out (int): Output dimension size.
+        d_in (int): Input dimension size.
+        context_len (int): Length of the context for causal attention.
+        dropout (float): Dropout rate for attention weights.
         num_heads (int): Number of attention heads.
         qkv_bias (bool): Whether to use bias in the linear transformations.
     """
