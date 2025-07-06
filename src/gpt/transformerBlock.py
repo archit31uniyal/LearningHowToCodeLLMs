@@ -19,7 +19,7 @@ class TransformerBlock(nn.Module):
             d_out=config['emb_dim'],
             context_len=config['context_length'],
             dropout=config['drop_rate'],
-            num_heads=config['num_heads'],
+            num_heads=config['n_heads'],
             qkv_bias=config['qkv_bias']
         )
         self.ln1 = LayerNorm(config['emb_dim'])
