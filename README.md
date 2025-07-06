@@ -12,7 +12,7 @@ The repository contains the implementation of concepts that are necessary to bui
 - [x] Coded layerNorm
 - [x] Coded transformer block
 - [x] Coded GPT model
-- [] Coded Training loop
-- [] Model Evaluation
-- [] Model Inference
-- [] Building a RAG system
+- [ ] Coded Training loop
+- [ ] Coded Model Evaluation
+- [ ] Coded Model Inference
+- [ ] Coded Building a RAG system
