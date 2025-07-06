@@ -4,7 +4,7 @@ from utils.config import *
 import torch.nn as nn
 from transformerBlock import TransformerBlock
 from layerNorm import LayerNorm
-from utils.helper import model_parameter_count
+from utils.helper import model_parameter_count, generate_text_simple
 
 class GPT(torch.nn.Module):
     """
@@ -48,5 +48,36 @@ class GPT(torch.nn.Module):
 
         return logits
     
-model = GPT(GPT_CONFIG_124M)
-print("Number of trainable parameters:", model_parameter_count(model))
+if __name__ == "__main__":
+    torch.manual_seed(123)
+    model = GPT(GPT_CONFIG_124M)
+    total_params = model_parameter_count(model)
+    print(f"Number of trainable parameters: {total_params:,}")
+    print("Token embedding layer shape:", model.tok_emb.weight.shape)
+    print("Output layer shape:", model.out_head.weight.shape)
+    total_params_gpt2 =  total_params - sum(p.numel() for p in model.out_head.parameters())
+    print(f"Number of trainable parameters considering weight tying: {total_params_gpt2:,}")
+
+    start_context = "Hello, I am"
+    tokenizer = tiktoken.get_encoding("gpt2")
+
+    encoded = tokenizer.encode(start_context)
+    print("encoded:", encoded)
+
+    encoded_tensor = torch.tensor(encoded).unsqueeze(0)
+    print("encoded_tensor.shape:", encoded_tensor.shape)
+
+    model.eval() # disable dropout
+
+    out = generate_text_simple(
+        model=model,
+        idx=encoded_tensor, 
+        max_new_tokens=6, 
+        context_size=GPT_CONFIG_124M["context_length"]
+    )
+
+    print("Output:", out)
+    print("Output length:", len(out[0]))
+
+    decoded_text = tokenizer.decode(out.squeeze(0).tolist())
+    print(decoded_text)
