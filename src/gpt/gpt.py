@@ -4,6 +4,7 @@ from utils.config import *
 import torch.nn as nn
 from transformerBlock import TransformerBlock
 from layerNorm import LayerNorm
+from utils.helper import model_parameter_count
 
 class GPT(torch.nn.Module):
     """
@@ -46,3 +47,6 @@ class GPT(torch.nn.Module):
         logits = self.out_head(x)
 
         return logits
+    
+model = GPT(GPT_CONFIG_124M)
+print("Number of trainable parameters:", model_parameter_count(model))
