@@ -68,10 +68,37 @@ class MultiHeadAttention(torch.nn.Module):
     """
     def __init__(self, d_out, d_in, context_len, dropout, num_heads, qkv_bias = False):
         super().__init__()
+        assert( d_out % num_heads == 0 ), "Output dimension must be divisible by number of heads"
+        self.d_out = d_out
+        self.num_heads = num_heads
+        self.head_dim = d_out // num_heads
 
-        self.heads = torch.nn.ModuleList(
-            [CausalAttention(d_in, d_out, context_len, dropout, qkv_bias) for _ in range(num_heads)]
-        )
+        self.W_query = torch.nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key = torch.nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_value = torch.nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.out_proj = torch.nn.Linear(d_out, d_out, bias=qkv_bias) # Linear layer to concatenate head outputs
+        self.dropout = torch.nn.Dropout(dropout)
+        self.register_buffer('mask', torch.triu(torch.ones(context_len, context_len), diagonal=1))
 
     def forward(self, x):
-        return torch.concat([head(x) for head in self.heads], dim=-1)
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
+        b, num_tokens, d_in = x.shape
+
+        keys = keys.view(b, num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+        queries = queries.view(b, num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+        values = values.view(b, num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+
+        attn_scores = queries @ keys.transpose(2, 3)
+
+        mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
+        attn_scores.masked_fill_(mask_bool, -torch.inf())
+
+        attn_weights = torch.nn.Softmax(attn_scores / math.sqrt(self.head_dim), dim=-1)
+        attn_weights = self.dropout(attn_weights)
+
+        context_vec = (attn_weights @ values).transpose(1,2)
+        context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+        context_vec = self.out_proj(context_vec)
+        return context_vec
